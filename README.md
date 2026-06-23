@@ -1,7 +1,6 @@
 
 <div align="center">
 
-```html
 <div align="center">
 
 <pre>
@@ -16,7 +15,8 @@
 </pre>
 
 </div>
-```
+
+
 
 
 **AI-Powered Zero Trust Auditor for Cisco Networks**
