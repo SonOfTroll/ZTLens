@@ -332,16 +332,242 @@ class ConfigParser:
         return self.interfaces
 
     def grab_acls(self):
-        """extract access control lists"""
-        # todo implement acl parsing
-        pass
+        """extract access control lists
+
+        handles both numbered and named acls
+        numbered: access-list 101 permit ip ...
+        named: ip access-list extended BLOCK_GUEST
+        """
+        self.acls = []
+
+        # numbered acls from global config lines
+        # these show up as "access-list 101 permit ip ..."
+        acl_blocks = self.sections.get("access-list", [])
+        for block in acl_blocks:
+            for line in block:
+                entry = self._parse_acl_line(line)
+                if entry:
+                    self.acls.append(entry)
+
+        # also check global section for standalone access-list lines
+        global_lines = self.sections.get("global", [])
+        for block in global_lines:
+            if isinstance(block, list):
+                for line in block:
+                    if line.startswith("access-list"):
+                        entry = self._parse_acl_line(line)
+                        if entry:
+                            # dont add duplicates
+                            if entry not in self.acls:
+                                self.acls.append(entry)
+            elif isinstance(block, str) and block.startswith("access-list"):
+                entry = self._parse_acl_line(block)
+                if entry:
+                    if entry not in self.acls:
+                        self.acls.append(entry)
+
+        # named extended acls
+        named_blocks = self.sections.get("ip access-list", [])
+        for block in named_blocks:
+            acl_name = None
+            line_num = 0
+
+            for line in block:
+                # first line is the acl name
+                name_match = re.match(r"^ip access-list (?:extended|standard)\s+(\S+)", line)
+                if name_match:
+                    acl_name = name_match.group(1)
+                    continue
+
+                if not acl_name:
+                    continue
+
+                line_num += 10
+                entry = self._parse_named_acl_entry(line, acl_name, line_num)
+                if entry:
+                    self.acls.append(entry)
+
+        return self.acls
+
+    def _parse_acl_line(self, line: str) -> dict:
+        """parse a single numbered acl line
+
+        format: access-list <num> <permit|deny> <protocol> <src> <src_wc> <dst> <dst_wc>
+        theres a bunch of variations but we handle the common ones
+        """
+        # extended acl
+        ext_match = re.match(
+            r"^access-list\s+(\d+)\s+(permit|deny)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)",
+            line
+        )
+        if ext_match:
+            return {
+                "number": int(ext_match.group(1)),
+                "name": None,
+                "action": ext_match.group(2),
+                "protocol": ext_match.group(3),
+                "src": ext_match.group(4),
+                "src_wildcard": ext_match.group(5),
+                "dst": ext_match.group(6),
+                "dst_wildcard": ext_match.group(7),
+                "line": line.strip(),
+                "type": "extended",
+            }
+
+        # extended with "any" keyword
+        ext_any = re.match(
+            r"^access-list\s+(\d+)\s+(permit|deny)\s+(\S+)\s+(\S+)\s+(\S+)\s+(any)",
+            line
+        )
+        if ext_any:
+            return {
+                "number": int(ext_any.group(1)),
+                "name": None,
+                "action": ext_any.group(2),
+                "protocol": ext_any.group(3),
+                "src": ext_any.group(4),
+                "src_wildcard": ext_any.group(5),
+                "dst": "any",
+                "dst_wildcard": "0.0.0.0",
+                "line": line.strip(),
+                "type": "extended",
+            }
+
+        # simple numbered acl - just src
+        simple_match = re.match(
+            r"^access-list\s+(\d+)\s+(permit|deny)\s+(\S+)\s*(\S*)",
+            line
+        )
+        if simple_match:
+            src = simple_match.group(3)
+            src_wc = simple_match.group(4) if simple_match.group(4) else "0.0.0.0"
+            return {
+                "number": int(simple_match.group(1)),
+                "name": None,
+                "action": simple_match.group(2),
+                "protocol": "ip",
+                "src": src,
+                "src_wildcard": src_wc,
+                "dst": "any",
+                "dst_wildcard": "0.0.0.0",
+                "line": line.strip(),
+                "type": "standard",
+            }
+
+        return None
+
+    def _parse_named_acl_entry(self, line: str, acl_name: str, line_num: int) -> dict:
+        """parse a single line from a named acl"""
+        line = line.strip()
+        if not line or line.startswith("!"):
+            return None
+
+        # permit/deny protocol src src_wc dst dst_wc
+        match = re.match(
+            r"^(permit|deny)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)",
+            line
+        )
+        if match:
+            return {
+                "number": None,
+                "name": acl_name,
+                "action": match.group(1),
+                "protocol": match.group(2),
+                "src": match.group(3),
+                "src_wildcard": match.group(4),
+                "dst": match.group(5),
+                "dst_wildcard": match.group(6),
+                "line": line,
+                "type": "named_extended",
+                "line_number": line_num,
+            }
+
+        # permit/deny src wildcard (standard named)
+        std_match = re.match(r"^(permit|deny)\s+(\S+)\s*(\S*)", line)
+        if std_match:
+            return {
+                "number": None,
+                "name": acl_name,
+                "action": std_match.group(1),
+                "protocol": "ip",
+                "src": std_match.group(2),
+                "src_wildcard": std_match.group(3) if std_match.group(3) else "0.0.0.0",
+                "dst": "any",
+                "dst_wildcard": "0.0.0.0",
+                "line": line,
+                "type": "named_standard",
+                "line_number": line_num,
+            }
+
+        return None
 
     def grab_port_security(self):
-        """check for port security configs on interfaces"""
-        # todo implement port security checks
-        pass
+        """check for port security configs on access port interfaces
+
+        looks at each access port and checks if port security
+        is enabled and how its configured
+        """
+        self.port_security = []
+
+        for iface in self.interfaces:
+            if iface["type"] != "access":
+                continue
+
+            ps_info = {
+                "interface": iface["name"],
+                "enabled": False,
+                "max_addresses": 1,     # default
+                "violation_mode": "shutdown",   # default
+                "sticky": False,
+            }
+
+            for line in iface.get("raw_lines", []):
+                if "switchport port-security" in line and "maximum" not in line and "violation" not in line and "mac" not in line:
+                    ps_info["enabled"] = True
+
+                max_match = re.match(r"^\s*switchport port-security maximum\s+(\d+)", line)
+                if max_match:
+                    ps_info["max_addresses"] = int(max_match.group(1))
+
+                if "violation" in line:
+                    viol_match = re.match(r"^\s*switchport port-security violation\s+(\S+)", line)
+                    if viol_match:
+                        ps_info["violation_mode"] = viol_match.group(1)
+
+                if "mac-address sticky" in line:
+                    ps_info["sticky"] = True
+
+            self.port_security.append(ps_info)
+
+        return self.port_security
 
     def grab_stp_config(self):
-        """extract spanning tree config"""
-        # probably not critical for phase 1 but adding the stub
-        pass
+        """extract spanning tree config
+
+        checks for things like root bridge priority
+        bpdu guard and portfast settings
+        """
+        # fixme this is pretty basic right now
+        self.stp_config = {
+            "mode": "pvst",     # default
+            "portfast_default": False,
+            "bpdu_guard_default": False,
+        }
+
+        # check global lines for stp settings
+        for block in self.sections.get("global", []):
+            lines = block if isinstance(block, list) else [block]
+            for line in lines:
+                if "spanning-tree mode" in line:
+                    mode_match = re.match(r"spanning-tree mode\s+(\S+)", line)
+                    if mode_match:
+                        self.stp_config["mode"] = mode_match.group(1)
+
+                if "spanning-tree portfast default" in line:
+                    self.stp_config["portfast_default"] = True
+
+                if "spanning-tree portfast bpduguard default" in line:
+                    self.stp_config["bpdu_guard_default"] = True
+
+        return self.stp_config
+
