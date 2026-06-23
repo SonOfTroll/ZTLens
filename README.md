@@ -1,16 +1,23 @@
 
 <div align="center">
 
+```html
+<div align="center">
+
+<pre>
+ _______ _______ _
+|___  /|__   __| |
+   / /    | |  | |     ___ _ __  ___
+  / /     | |  | |    / _ \ '_ \/ __|
+ / /__    | |  | |___|  __/ | | \__ \
+/_____|   |_|  |______\___|_| |_|___/
+
+      Zero Trust Configuration Auditor
+</pre>
+
+</div>
 ```
-                                          _______ _______ _                      
-                                          |___  /|__   __| |                     
-                                             / /    | |  | |     ___ _ __  ___   
-                                            / /     | |  | |    / _ \ '_ \/ __|  
-                                           / /__    | |  | |___|  __/ | | \__ \  
-                                          /_____|   |_|  |______\___|_| |_|___/  
-                                          
-                                             Zero Trust Configuration Auditor
-```
+
 
 **AI-Powered Zero Trust Auditor for Cisco Networks**
 
