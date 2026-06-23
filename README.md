@@ -9,10 +9,8 @@ _______ _______ _
  / /__    | |  | |___|  __/ | | \__ \
 /_____|   |_|  |______\___|_| |_|___/
 
-      Zero Trust Configuration Auditor
+   Zero Trust Configuration Auditor
 </pre>
-
-</div>
 
 
 
