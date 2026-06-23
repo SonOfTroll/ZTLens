@@ -9,8 +9,6 @@ _______ _______ _
  / /__    | |  | |___|  __/ | | \__ \  
 /_____|   |_|  |______\___|_| |_|___/  
 
-     Zero Trust Architecture Analyzer
-
     Zero Trust Configuration Auditor
 ```
 
