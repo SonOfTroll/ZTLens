@@ -3,12 +3,14 @@
 <div align="center">
 
 ```
-  _______ _
- |__   __| |
-    | |  | |     ___ _ __  ___
-    | |  | |    / _ \ '_ \/ __|
-    | |  | |___|  __/ | | \__ \
-    |_|  |______\___|_| |_|___/
+_______ _______ _                      
+|___  /|__   __| |                     
+   / /    | |  | |     ___ _ __  ___   
+  / /     | |  | |    / _ \ '_ \/ __|  
+ / /__    | |  | |___|  __/ | | \__ \  
+/_____|   |_|  |______\___|_| |_|___/  
+
+     Zero Trust Architecture Analyzer
 
     Zero Trust Configuration Auditor
 ```
@@ -22,7 +24,7 @@
 
 ---
 
-## ⚠️ What Is This
+## What Is This
 
 ZTLens is an AI-driven Zero Trust configuration auditor for Cisco networks. You feed it Cisco device configs (from Packet Tracer, GNS3, or real hardware), and it tells you whether your network actually enforces Zero Trust — not just whether the config is syntactically correct, but whether it's *secure by design*.
 
@@ -30,7 +32,7 @@ Most network auditing tools check syntax. ZTLens checks **intent vs reality** �
 
 ---
 
-## 🚀 Features
+## Features
 
 | Feature | Description |
 |---------|-------------|
@@ -44,71 +46,7 @@ Most network auditing tools check syntax. ZTLens checks **intent vs reality** �
 
 ---
 
-## 📦 Installation
-
-```bash
-# clone the repo
-git clone https://github.com/SonOfTroll/ZTLens.git
-cd ZTLens
-
-# install dependencies
-pip install -r requirements.txt
-```
-
----
-
-## 🖥️ Usage
-
-```bash
-# analyze a cisco config
-python -m ztlens --config configs/sample_campus.cfg
-
-# verbose output
-python -m ztlens --config configs/sample_campus.cfg --verbose
-```
-
----
-
-## 🏗️ Architecture
-
-```
-ZTLens/
-├── configs/              # sample cisco configs for testing
-├── ztlens/
-│   ├── parser/           # cisco ios config parser
-│   ├── graph/            # networkx reachability graph
-│   ├── engine/           # zero trust findings engine
-│   ├── ai/               # claude api integration
-│   ├── dashboard/        # web ui and visualization
-│   └── reports/          # pdf/html report generation
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Tool |
-|-------|------|
-| Config parsing | Python (regex + custom IOS parser) |
-| Graph engine | NetworkX |
-| AI layer | Claude API (Anthropic) |
-| Visualization | Cytoscape.js / D3.js |
-| Report generation | ReportLab / WeasyPrint |
-| Lab simulation | Cisco Packet Tracer / GNS3 |
-
----
-
-## 📋 Build Phases
-
-- [x] **Phase 1** — Parser + reachability graph
-- [ ] **Phase 2** — Zero Trust findings engine
-- [ ] **Phase 3** — AI explainer via Claude API
-- [ ] **Phase 4** — Dashboard + visualization
-- [ ] **Phase 5** — Report generator + polish
-
----
-
-## 📄 License
+## License
 
 MIT License — see [LICENSE](./LICENSE) for details.
 
